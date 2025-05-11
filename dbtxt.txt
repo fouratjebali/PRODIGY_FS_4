@@ -1,0 +1,41 @@
+CREATE TABLE "users" (
+    "id" SERIAL PRIMARY KEY,
+    "username" VARCHAR(255) UNIQUE NOT NULL,
+    "email" VARCHAR(255) UNIQUE NOT NULL,
+    "password_hash" VARCHAR(255) NOT NULL,
+    "avatar_url" VARCHAR(255) NULL,
+    "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE TABLE "chat_rooms" (
+    "id" SERIAL PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    "is_private" BOOLEAN DEFAULT FALSE NOT NULL,
+    "creator_id" integer REFERENCES "users"("id") ON DELETE SET NULL, -- User who created the room
+    "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE TABLE "messages" (
+    "id" SERIAL PRIMARY KEY,
+    "content" TEXT NULL, -- Nullable if it's a file-only message
+    "sender_id" INTEGER REFERENCES "users"("id") ON DELETE CASCADE NOT NULL,
+    "chat_room_id" INTEGER REFERENCES "chat_rooms"("id") ON DELETE CASCADE NOT NULL,
+    "file_id" INTEGER NULL REFERENCES "files"("id") ON DELETE SET NULL, -- Link to an uploaded file
+    "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE TABLE "files" (
+    "id" SERIAL PRIMARY KEY,
+    "filename" VARCHAR(255) NOT NULL,        -- Stored filename (e.g., with hash)
+    "originalname" VARCHAR(255) NOT NULL,    -- Original uploaded filename
+    "mimetype" VARCHAR(100) NOT NULL,
+    "size" INTEGER NOT NULL,                 -- Size in bytes
+    "path" VARCHAR(255) NOT NULL,            -- Relative path to the file
+    "uploader_id" INTEGER REFERENCES "users"("id") ON DELETE SET NULL, -- User who uploaded the file
+    "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+CREATE TABLE "chat_room_users" (
+    "chat_room_id" INTEGER REFERENCES "chat_rooms"("id") ON DELETE CASCADE,
+    "user_id" INTEGER REFERENCES "users"("id") ON DELETE CASCADE,
+    PRIMARY KEY ("chat_room_id", "user_id")
+);
