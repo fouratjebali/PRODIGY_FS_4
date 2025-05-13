@@ -1,15 +1,16 @@
 const express = require('express');
 const chatController = require('../Controllers/chatController');
+const { authenticate } = require('../Middlewear/authMiddlewear'); 
 
 
 const router = express.Router();
 
-router.post('/create', chatController.createRoom);
-router.get('/user-rooms', chatController.getUserRooms);
-router.get('/:id', chatController.getRoomById);
-router.post('/join/:id', chatController.joinRoom);
-router.post('/message', chatController.sendMessage);
-router.get('/messages/:roomId', chatController.getMessages);
+router.post('/create', authenticate,chatController.createRoom);
+router.get('/user-rooms',authenticate, chatController.getUserRooms);
+router.get('/:id',authenticate, chatController.getRoomById);
+router.post('/join/:id',authenticate, chatController.joinRoom);
+router.post('/message', authenticate,chatController.sendMessage);
+router.get('/messages/:roomId', authenticate,chatController.getMessages);
 
 
 

@@ -137,6 +137,8 @@ const getMessagesForRoom = async (roomId, limit = 50, offset = 0) => {
   }
 };
 
+
+
 module.exports = {
   createChatRoom,
   findRoomById,

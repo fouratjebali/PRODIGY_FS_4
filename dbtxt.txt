@@ -39,3 +39,31 @@ CREATE TABLE "chat_room_users" (
     "user_id" INTEGER REFERENCES "users"("id") ON DELETE CASCADE,
     PRIMARY KEY ("chat_room_id", "user_id")
 );
+
+INSERT INTO "chat_rooms" ("name", "is_private", "creator_id") VALUES
+('General Chat', FALSE, 2),
+('Private Team', TRUE, 2),
+('Random Discussions', FALSE, 2);
+
+INSERT INTO "messages" ("content", "sender_id", "chat_room_id", "file_id") VALUES
+('Hello everyone!', 2, 7, NULL),
+('Hi John!', 2, 8, NULL),
+('Check out this file', 2, 9, NULL),
+('Team meeting tomorrow', 2, 8, NULL),
+('I''ll be there', 2, 9, NULL),
+('What are you discussing?', 2, 7, NULL),
+('Random stuff', 2, 7, NULL),
+('Here''s a document', 2, 8, NULL),
+('Nice screenshot!', 2, 9, NULL);
+
+const { logout, user } = useAuth();
+  const [searchTerm, setSearchTerm] = React.useState('');
+  
+
+  const filteredChatRooms = chatRooms.filter(room => 
+    room.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredDirectMessages = directMessages.filter(dm => 
+    dm.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );

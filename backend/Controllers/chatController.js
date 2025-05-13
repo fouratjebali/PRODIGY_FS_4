@@ -3,7 +3,8 @@ const chatService = require("../Services/chatServices"); // Adjust path if neede
 const createRoom = async (req, res) => {
   const creator = req.user; // Assumes req.user is populated via auth middleware
   const roomData = req.body;
-
+  console.log("Creator object:", creator);
+  console.log("Room data:", roomData);
   try {
     const newRoom = await chatService.createChatRoom(roomData, creator);
     return res.status(201).json(newRoom);
@@ -80,6 +81,7 @@ const getMessages = async (req, res) => {
   }
 };
 
+
 module.exports = {
   createRoom,
   getUserRooms,
@@ -87,4 +89,5 @@ module.exports = {
   joinRoom,
   sendMessage,
   getMessages,
+
 };

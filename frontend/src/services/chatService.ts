@@ -66,20 +66,49 @@ export const getChatRoomMessages = async (roomId: string): Promise<Message[]> =>
   }
 };
 
-export const createChatRoom = async (data: CreateChatRoomDto): Promise<ChatRoom> => {
+export const createChatRoom = async (roomData: { name: string; userIds: string[] }) => {
   try {
-    const response = await apiClient.post("/api/chat/create", data);
+    const token = localStorage.getItem("token"); 
+    if (!token) {
+      throw new Error("No token found");
+    }
+    const response = await apiClient.post("/api/chat/create", roomData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     return response.data;
   } catch (error) {
     console.error("Error creating chat room:", error);
     throw error;
   }
 };
-
-// sendMessage will be handled by WebSocket, but creating a message record might be an API call
-// or purely through WebSocket. For now, assume WebSocket handles it.
-
-// File Upload Service
+export const sendMessage = async (messageData: SendMessageDto): Promise<Message> => {
+  try {
+    const response = await apiClient.post("/api/chat/message", messageData);
+    return {
+      id: response.data.id,
+      sender: {
+        id: response.data.sender.id,
+        username: response.data.sender.username,
+        avatarUrl: response.data.sender.avatarUrl, 
+      },
+      content: response.data.content,
+      timestamp: new Date(response.data.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      isOutgoing: true,
+      messageType: response.data.file ? (response.data.file.mimetype.startsWith("image/") ? "image" : (response.data.file.mimetype.startsWith("video/") ? "video" : "file")) : "text",
+      file: response.data.file ? {
+        fileName: response.data.file.originalname,
+        fileUrl: `/media/${response.data.file.filename}`, 
+        fileSize: `${(response.data.file.size / 1024 / 1024).toFixed(2)} MB`,
+      } : undefined,
+      createdAt: response.data.createdAt
+    };
+  } catch (error) {
+    console.error("Error sending message:", error);
+    throw error;
+  }
+};
 export const uploadFile = async (file: File, onUploadProgress?: (progressEvent: any) => void): Promise<{ id: string, filename: string, originalname: string, mimetype: string, size: number, path: string }> => {
   const formData = new FormData();
   formData.append("file", file);

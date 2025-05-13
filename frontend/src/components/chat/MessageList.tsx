@@ -1,102 +1,123 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faImage, faVideo, faFileAlt, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons';
-import { IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faUserCircle, 
+  faImage, 
+  faVideo, 
+  faFileAlt, 
+  faDownload, 
+  faSpinner,
+  faExclamationCircle,
+  faComments
+} from '@fortawesome/free-solid-svg-icons';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
-
-// Define a Message type (this will likely come from a shared types folder or API definition later)
 export interface Message {
   id: string;
   sender: {
     id: string;
     username: string;
-    avatarUrl?: string; // Optional: URL to sender's avatar
+    avatarUrl?: string;
   };
   content: string | null;
-  timestamp: string; // Or Date object, then format it
+  timestamp: string;
   isOutgoing: boolean;
-  messageType: 'text' | 'image' | 'video' | 'file'; // Add other types as needed
+  messageType: 'text' | 'image' | 'video' | 'file';
   file?: {
     fileName: string;
-    fileUrl: string; // URL to download/view the file
-    fileSize?: string; // e.g., "2.5 MB"
+    fileUrl: string;
+    fileSize?: string;
     fileTypeIcon?: IconDefinition;
   };
-  createdAt: string; 
+  createdAt: string;
+  status?: 'sending' | 'delivered' | 'failed';
 }
-
-// Dummy messages for UI design
-const dummyMessages: Message[] = [
-  {
-    id: '1',
-    sender: { id: '1', username: 'Alice', avatarUrl: 'https://via.placeholder.com/150' },
-    content: 'Hello, how are you?',
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isOutgoing: false,
-    messageType: 'text',
-    file: undefined,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    sender: { id: '2', username: 'Bob', avatarUrl: 'https://via.placeholder.com/150' },
-    content: 'I am good, thanks! How about you?',
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    isOutgoing: true,
-    messageType: 'text',
-    file: undefined,
-    createdAt: new Date().toISOString(),
-  },];
 
 interface MessageItemProps {
   message: Message;
+  onRetry?: (messageId: string) => void;
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
+const MessageItem: React.FC<MessageItemProps> = ({ message, onRetry }) => {
   const avatarInitial = message.sender.username.substring(0, 1).toUpperCase();
+  const isFailed = message.status === 'failed';
 
   const renderFileContent = () => {
     if (!message.file) return null;
 
+    const filePreviewClasses = "rounded-md max-w-xs lg:max-w-sm xl:max-w-md mt-2 cursor-pointer hover:opacity-90 transition-opacity";
+
     switch (message.messageType) {
       case 'image':
         return (
-          <img 
-            src={message.file.fileUrl} 
-            alt={message.file.fileName} 
-            className="rounded-md max-w-xs lg:max-w-sm xl:max-w-md mt-2 cursor-pointer hover:opacity-90 transition-opacity" 
-            onClick={() => window.open(message.file?.fileUrl, 
-'_blank')} // Basic image viewer
-          />
+          <div className="relative">
+            <img 
+              src={message.file.fileUrl} 
+              alt={message.file.fileName} 
+              className={filePreviewClasses}
+              onClick={() => window.open(message.file?.fileUrl, '_blank')}
+            />
+            {isFailed && <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <FontAwesomeIcon icon={faExclamationCircle} className="text-red-500 text-2xl" />
+            </div>}
+          </div>
         );
       case 'video':
         return (
-            <div className="mt-2 max-w-xs lg:max-w-sm xl:max-w-md">
-                <video controls className="rounded-md w-full" src={message.file.fileUrl}>
-                    Your browser does not support the video tag.
-                </video>
-                <a href={message.file.fileUrl} target="_blank" rel="noopener noreferrer" className="block text-xs text-indigo-300 hover:text-indigo-200 mt-1">
-                    {message.file.fileName}
-                </a>
-            </div>
+          <div className="mt-2 max-w-xs lg:max-w-sm xl:max-w-md relative">
+            <video controls className="rounded-md w-full" src={message.file.fileUrl}>
+              Your browser does not support the video tag.
+            </video>
+            {isFailed && <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <FontAwesomeIcon icon={faExclamationCircle} className="text-red-500 text-2xl" />
+            </div>}
+            <a 
+              href={message.file.fileUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="block text-xs text-indigo-300 hover:text-indigo-200 mt-1"
+            >
+              {message.file.fileName}
+            </a>
+          </div>
         );
       case 'file':
         return (
-          <a 
-            href={message.file.fileUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="flex items-center bg-gray-600 hover:bg-gray-500 p-3 rounded-lg mt-2 transition-colors max-w-xs group">
-            <FontAwesomeIcon 
-              icon={message.file.fileTypeIcon || faFileAlt} 
-              className="text-2xl text-gray-300 group-hover:text-indigo-300 mr-3 transition-colors" 
-            />
-            <div className="overflow-hidden">
-              <span className="text-sm text-gray-100 group-hover:text-white truncate block">{message.file.fileName}</span>
-              {message.file.fileSize && <span className="text-xs text-gray-400">{message.file.fileSize}</span>}
-            </div>
-            <FontAwesomeIcon icon={faDownload} className="ml-auto text-gray-400 group-hover:text-indigo-300 transition-colors" />
-          </a>
+          <div className="relative">
+            <a 
+              href={!isFailed ? message.file.fileUrl : '#'} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className={`flex items-center ${isFailed ? 'bg-gray-700' : 'bg-gray-600 hover:bg-gray-500'} p-3 rounded-lg mt-2 transition-colors max-w-xs group`}
+              onClick={isFailed ? (e) => e.preventDefault() : undefined}
+            >
+              <FontAwesomeIcon 
+                icon={message.file.fileTypeIcon || faFileAlt} 
+                className={`text-2xl ${isFailed ? 'text-gray-500' : 'text-gray-300 group-hover:text-indigo-300'} mr-3 transition-colors`} 
+              />
+              <div className="overflow-hidden">
+                <span className={`text-sm ${isFailed ? 'text-gray-500' : 'text-gray-100 group-hover:text-white'} truncate block`}>
+                  {message.file.fileName}
+                </span>
+                {message.file.fileSize && (
+                  <span className={`text-xs ${isFailed ? 'text-gray-600' : 'text-gray-400'}`}>
+                    {message.file.fileSize}
+                  </span>
+                )}
+              </div>
+              {!isFailed && (
+                <FontAwesomeIcon 
+                  icon={faDownload} 
+                  className="ml-auto text-gray-400 group-hover:text-indigo-300 transition-colors" 
+                />
+              )}
+            </a>
+            {isFailed && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <FontAwesomeIcon icon={faExclamationCircle} className="text-red-500" />
+              </div>
+            )}
+          </div>
         );
       default:
         return null;
@@ -115,23 +136,46 @@ const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
         </div>
       )}
       <div 
-        className={`p-3 rounded-xl max-w-[70%] md:max-w-[60%] lg:max-w-[55%] shadow-md ${ 
+        className={`relative p-3 rounded-xl max-w-[70%] md:max-w-[60%] lg:max-w-[55%] shadow-md ${
           message.isOutgoing 
             ? 'bg-indigo-600 text-white rounded-br-none'
             : 'bg-gray-700 text-gray-200 rounded-bl-none'
-        }`}>
+        } ${
+          isFailed ? 'opacity-80 border border-red-500' : ''
+        }`}
+      >
         {!message.isOutgoing && (
           <p className="text-xs font-semibold text-indigo-400 mb-0.5">{message.sender.username}</p>
         )}
-        {message.content && <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
+        {message.content && (
+          <p className={`text-sm whitespace-pre-wrap break-words ${isFailed ? 'text-gray-400' : ''}`}>
+            {message.content}
+          </p>
+        )}
         {renderFileContent()}
-        <p className={`text-xs mt-1.5 ${message.isOutgoing ? 'text-indigo-200' : 'text-gray-500'} text-right`}>
-          {message.timestamp}
-        </p>
+        <div className="flex items-center justify-end mt-1.5 space-x-2">
+          {isFailed && message.isOutgoing && onRetry && (
+            <button 
+              onClick={() => onRetry(message.id)}
+              className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded transition-colors"
+            >
+              Retry
+            </button>
+          )}
+          <p className={`text-xs ${message.isOutgoing ? 'text-indigo-200' : 'text-gray-500'}`}>
+            {message.timestamp}
+            {message.isOutgoing && message.status && (
+              <span className="ml-1">
+                {message.status === 'sending' && <FontAwesomeIcon icon={faSpinner} spin />}
+                {message.status === 'delivered' && '✓'}
+                {message.status === 'failed' && '✗'}
+              </span>
+            )}
+          </p>
+        </div>
       </div>
       {message.isOutgoing && (
         <div className="w-10 h-10 rounded-full ml-3 flex-shrink-0 bg-indigo-500 flex items-center justify-center text-white font-semibold overflow-hidden">
-          {/* Current user avatar placeholder */}
           {message.sender.avatarUrl ? (
             <img src={message.sender.avatarUrl} alt={message.sender.username} className="w-full h-full object-cover" />
           ) : (
@@ -147,36 +191,57 @@ interface MessageListProps {
   messages: Message[];
   isLoading?: boolean;
   currentUserId: string;
+  onRetryFailedMessage?: (messageId: string) => void;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
-  const messagesEndRef = React.useRef<null | HTMLDivElement>(null);
+const MessageList: React.FC<MessageListProps> = ({ 
+  messages, 
+  isLoading, 
+  currentUserId,
+  onRetryFailedMessage 
+}) => {
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const processedMessages = messages.map(msg => ({
+    ...msg,
+    isOutgoing: msg.sender.id === currentUserId
+  }));
+
   if (isLoading) {
     return (
-        <div className="flex-1 flex items-center justify-center p-4 bg-gray-850">
-            <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-indigo-500" />
-            <p className="ml-4 text-lg text-gray-400">Loading messages...</p>
-        </div>
+      <div className="flex-1 flex items-center justify-center p-4 bg-gray-850">
+        <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-indigo-500" />
+        <p className="ml-4 text-lg text-gray-400">Loading messages...</p>
+      </div>
+    );
+  }
+
+  if (messages.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-850 text-center">
+        <FontAwesomeIcon icon={faComments} className="text-5xl text-gray-600 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-400">No messages yet</h3>
+        <p className="text-gray-500">Start the conversation!</p>
+      </div>
     );
   }
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto bg-gray-850 custom-scrollbar selection:bg-indigo-500 selection:text-white">
-      {messages.map(msg => (
-        <MessageItem key={msg.id} message={msg} />
+      {processedMessages.map(msg => (
+        <MessageItem 
+          key={msg.id} 
+          message={msg} 
+          onRetry={onRetryFailedMessage}
+        />
       ))}
       <div ref={messagesEndRef} />
     </div>
   );
 };
 
-// Example usage within a ChatArea component (not defined here)
-// <MessageList messages={dummyMessages} />
-
 export default MessageList;
-
